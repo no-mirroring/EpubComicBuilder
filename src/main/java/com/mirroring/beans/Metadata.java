@@ -11,6 +11,7 @@ package com.mirroring.beans;
 public class Metadata{
     private String title;
     private String identifier = "id:mirroring";
+    private String creator = "mirroring";
     private String language = "zh-CN";
 
 
@@ -42,4 +43,11 @@ public class Metadata{
         this.language = language;
     }
 
+    public String getCreator() {
+        return creator;
+    }
+
+    public void setCreator(String creator) {
+        this.creator = creator;
+    }
 }

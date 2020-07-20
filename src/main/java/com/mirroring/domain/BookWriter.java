@@ -3,9 +3,11 @@ package com.mirroring.domain;
 import com.mirroring.beans.*;
 import com.mirroring.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
+import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.*;
 import java.util.List;
@@ -36,27 +38,16 @@ public class BookWriter {
         this(bookProcessor, rootPath, bookProcessor.getBook().getBookName());
     }
 
-    public void writeBook(Book book) throws IOException {
+    public void writeBook() throws Exception {
         //创建mimetype文件
-        IOUtils.writeText(new File(rootPath,"minetype"),"application/epub+zip");
-        //创建OPS/container.xml
+        IOUtils.writeText(new File(rootPath,"mimetype"),"application/epub+zip");
+        //创建META-INF/container.xml,OPS/mirroring.opf,OPS/mirroring.ncx
         IOUtils.writeXML(parseContainer(),new File(rootPath+"\\META-INF\\","container.xml"));
         IOUtils.writeXML(parseOPF(),new File(rootPath+"\\OPS\\","mirroring.opf"));
         IOUtils.writeXML(parseNCX(),new File(rootPath+"\\OPS\\","mirroring.ncx"));
-
-        List<Chapter> chapterList = bookProcessor.getBook().getChapterList();
-        for (int i = 0; i < chapterList.size(); i++) {
-            Chapter chapter = chapterList.get(i);
-            IOUtils.writeXML(createChapterHtml(chapter), new File(rootPath + "\\OPS\\" + "chapter" + i+".html"));
-            //如果是图片章节，把图片移动到images/
-            if (chapter.getMediaType() == MediaType.PIC_LIST) {
-                List<File> picList = chapter.getPicFileList();
-                for (File file : picList) {
-                    FileUtils.moveFileToDirectory(file, new File(rootPath + "\\OPS\\images\\"), true);
-                }
-            }
-        }
-
+        //移动图片文件
+        moveImages();
+        packEPUB();
 
     }
 
@@ -117,7 +108,7 @@ public class BookWriter {
         Element metadata = root.addElement("metadata");
         Element manifest = root.addElement("manifest");
         manifest.addAttribute("toc", "ncx");
-        Element spine = root.addElement("spine");
+        Element spine = root.addElement("spine").addAttribute("toc", "ncx");//添加该属性来关联ncx目录，否则目录加载不正常
         Element guide = root.addElement("guide");
 
         //填充属性root
@@ -125,15 +116,33 @@ public class BookWriter {
         root.addAttribute("unique-identifier", bookProcessor.getBook().getBookID());
         root.addAttribute("version", "2.0");
         //填充属性metadata
-        metadata.addNamespace("dc", "");
+        metadata.addNamespace("dc", "");//设置命名空间，否则标签不能包含冒号
         metadata.addElement("dc:title").addText(opf.getMetadata().getTitle());
         metadata.addElement("dc:identifier").addText(opf.getMetadata().getIdentifier());
         metadata.addElement("dc:language").addText(opf.getMetadata().getLanguage());
+        metadata.addElement("dc:creator").addText(opf.getMetadata().getCreator());
         //填充属性manifest
         List<Manifest.Item> itemList = opf.getManifest().getItemList();
         for (int i = 0; i < itemList.size(); i++) {
             Manifest.Item item = itemList.get(i);
-            manifest.addElement("item").addAttribute("id", item.getId()).addAttribute("href", item.getHref()).addAttribute("media-type", item.getMetaType());
+            manifest.addElement("item")
+                    .addAttribute("id", item.getId())
+                    .addAttribute("href", item.getHref())
+                    .addAttribute("media-type", item.getMetaType());
+        }
+
+        //这里单独处理封面
+        File cover = bookProcessor.getBook().getCover();
+        if (cover!= null) {
+            //在metadata里添加封面标签
+            metadata.addElement("meta")
+                    .addAttribute("name", "cover")
+                    .addAttribute("content", "cover-image");//这个属性对应manifest里的id
+            //把封面加入manifest清单
+            manifest.addElement("item")
+                    .addAttribute("id", "cover-image")
+                    .addAttribute("href", "images/cover_image." + FilenameUtils.getExtension(cover.getName()))
+                    .addAttribute("media-type", MediaType.MANIFEST_JPEG);
         }
 
         //填充属性spine
@@ -212,6 +221,27 @@ public class BookWriter {
         return document;
     }
 
+    private void moveImages() throws IOException {
+        List<Chapter> chapterList = bookProcessor.getBook().getChapterList();
+        for (int i = 0; i < chapterList.size(); i++) {
+            Chapter chapter = chapterList.get(i);
+            IOUtils.writeXML(createChapterHtml(chapter), new File(rootPath + "\\OPS\\" + "chapter" + i+".html"));
+            //如果是图片章节，把图片复制到images/
+            if (chapter.getMediaType() == MediaType.PIC_LIST) {
+                List<File> picList = chapter.getPicFileList();
+                for (File file : picList) {
+                    FileUtils.copyFileToDirectory(file, new File(rootPath + "\\OPS\\images\\"), true);
+                }
+            }
+        }
+        //单独复制封面图片
+        File cover = bookProcessor.getBook().getCover();
+        if (cover != null) {
+            //重命名成cover_image
+            FileUtils.copyFile(cover, new File(rootPath + "\\OPS\\images\\cover_image." + FilenameUtils.getExtension(cover.getName())));
+        }
+    }
+
     /**
      * 把一个章节解析成html
      * @param chapter
@@ -222,13 +252,40 @@ public class BookWriter {
         Element root = document.addElement("html");
         root.addElement("head");
         Element body = root.addElement("body");
+
+        //如果是图片章节，把图片标签写入html
         if (chapter.getMediaType() == MediaType.PIC_LIST) {
             List<File> picList = chapter.getPicFileList();
             for (int i = 0; i < picList.size(); i++) {
                 File pic = picList.get(i);
-                body.addElement("div").addElement("img").addAttribute("src", "images\\" + pic.getName());
+                //加入style使图片适应屏幕
+                body.addElement("p").addAttribute("style","text-align:center;text-indent:0em")
+                        .addElement("img").addAttribute("src", "images\\" + pic.getName());
             }
+        } else if (chapter.getMediaType() == MediaType.TEXT) {
+            //如果是文字章节,直接把文字写入html
+            body.addText(chapter.getContent());
         }
         return document;
+    }
+
+    /**
+     * 压缩成EPUB
+     */
+    private void packEPUB() throws Exception {
+        File mimetype = new File(rootPath, "mimetype");
+        File meta_inf = new File(rootPath + "\\META-INF");
+        File ops = new File(rootPath + "\\OPS");
+        //新文件夹，等待压缩
+        File newDir = new File(rootPath + "\\" + fileName+".epub");
+        //把三个文件夹和文件移动到新文件夹
+        if (newDir.exists()) throw new Exception("文件已经存在，请先删除:" + newDir.getName());
+        FileUtils.moveFileToDirectory(mimetype,newDir,true);
+        FileUtils.moveDirectoryToDirectory(meta_inf,newDir,true);
+        FileUtils.moveDirectoryToDirectory(ops,newDir,true);
+        //压缩新文件夹
+        ZipUtil.unexplode(newDir);
+        //新文件夹变成了一个文件
+        File newZip = new File(rootPath + "\\" + fileName);
     }
 }

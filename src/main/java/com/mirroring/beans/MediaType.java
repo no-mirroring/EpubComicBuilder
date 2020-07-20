@@ -1,7 +1,9 @@
 package com.mirroring.beans;
 
 public class MediaType {
+    //纯文本章节
     public static final int TEXT=0;
+    //纯图片章节
     public static final int PIC_LIST =1;
     //container.xml
     public static final String CONTAINER_MEDIA_TYPE = "application/oebps-package+xml";

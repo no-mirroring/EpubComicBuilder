@@ -13,7 +13,7 @@ public class Book {
     private String bookID;//ID
     private String author;//作者
     private List<Chapter> chapterList;//章节
-    private File cover;
+    private File cover;//封面
 
     public Book(String bookName) {
         this(bookName, "id:mirroring");
@@ -43,6 +43,10 @@ public class Book {
 
     public List<Chapter> getChapterList() {
         return chapterList;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
     }
 
     public File getCover() {

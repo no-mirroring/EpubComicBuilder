@@ -24,8 +24,11 @@ public class BookProcessor {
      * @return BookProcessor
      */
     public BookProcessor process() {
+        //添加containerBean
         processContainer();
+        //OPFBean
         processOPF();
+        //NCXBean
         processNCX();
         return this;
     }
@@ -42,7 +45,9 @@ public class BookProcessor {
      * 解析mirroring.opf文件
      */
     private void processOPF() {
+        //添加metadata
         Metadata metadata = new Metadata(book.getBookName());
+        metadata.setCreator(book.getAuthor());
 
         //遍历添加manifest的item
         Manifest manifest = new Manifest();
@@ -61,8 +66,9 @@ public class BookProcessor {
                     for (int j = 0; j < picList.size(); j++) {
                         File pic = picList.get(j);
                         //图片添加时放在images/
-                        manifest.addItem(manifest.new Item("image_"+FilenameUtils.getBaseName(pic.getName()), "images/" + pic.getName(), MediaType.MANIFEST_JPEG));
-
+                        manifest.addItem(manifest.new Item("image_"+FilenameUtils.getBaseName(pic.getName()),
+                                "images/" + pic.getName(),
+                                MediaType.MANIFEST_JPEG));
                     }
                     break;
                 //文字章节
@@ -97,6 +103,8 @@ public class BookProcessor {
         }
 
     }
+
+
     public Book getBook() {
         return book;
     }

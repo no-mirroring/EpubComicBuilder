@@ -33,7 +33,7 @@ public class Chapter {
     /**
      * 纯文本章节
      * @param chapterName 章节名
-     * @param content 文本
+     * @param content 文本,可以包含html标签
      */
     public Chapter(String chapterName, String content) {
         this.chapterName = chapterName;
