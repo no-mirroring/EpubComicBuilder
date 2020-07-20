@@ -1,4 +1,7 @@
 # EpubComicBuilder
+
+__直接下载jar包即可__
+
 制作epub漫画
 
 `````````
