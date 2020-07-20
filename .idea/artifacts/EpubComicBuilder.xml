@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="EpubComicBuilder">
+    <output-path>$PROJECT_DIR$/out/artifacts/EpubComicBuilder</output-path>
+    <root id="archive" name="EpubComicBuilder.jar">
+      <element id="module-output" name="EpubComicBuilder" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../tooljar/zt-zip.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/slf4j/slf4j-simple/1.7.25/slf4j-simple-1.7.25.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../tooljar/dom4j-2.1.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../tooljar/commons-io-2.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

@@ -13,7 +13,7 @@ import java.util.List;
  * 章节类型：纯文本，纯图片，在BookProcessor和BookWriter类中会做不同处理
  */
 public class Main {
-    public static void main(String[] args) throws Exception {
+    /*public static void main(String[] args) throws Exception {
         //书名
         Book book = new Book("第一本书");
         book.setAuthor("无镜像");
@@ -33,5 +33,5 @@ public class Main {
 
         BookWriter bookWriter = new BookWriter(book.build(), new File("F:\\tt\\ttt\\"));
         bookWriter.writeBook();
-    }
+    }*/
 }
