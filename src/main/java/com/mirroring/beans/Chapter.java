@@ -1,7 +1,5 @@
 package com.mirroring.beans;
 
-import com.mirroring.beans.MediaType;
-
 import java.io.File;
 import java.util.List;
 
@@ -10,6 +8,7 @@ public class Chapter {
     private int mediaType;
     private List<File> picFileList;//图片
     private String content;
+    private ResourceHtml resourceHtml;
 
     /**
      * 纯图片章节
@@ -26,9 +25,8 @@ public class Chapter {
         }
         this.chapterName = chapterName;
         this.picFileList = picFileList;
-        this.mediaType = MediaType.PIC_LIST;
+        this.mediaType = MediaType.CHAPTER_PIC_LIST;
     }
-
 
     /**
      * 纯文本章节
@@ -38,7 +36,17 @@ public class Chapter {
     public Chapter(String chapterName, String content) {
         this.chapterName = chapterName;
         this.content = content;
-        this.mediaType = MediaType.TEXT;
+        this.mediaType = MediaType.CHAPTER_TEXT;
+    }
+
+    /**
+     * html章节
+     * @param resourceHtml
+     */
+    public Chapter(String chapterName,ResourceHtml resourceHtml) {
+        this.chapterName = chapterName;
+        this.resourceHtml = resourceHtml;
+        this.mediaType = MediaType.CHAPTER_HTML;
     }
 
     public String getChapterName() {
@@ -56,4 +64,9 @@ public class Chapter {
     public String getContent() {
         return content;
     }
+
+    public ResourceHtml getResourceHtml() {
+        return resourceHtml;
+    }
+
 }

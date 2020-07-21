@@ -18,10 +18,9 @@ public class BookWriter {
     private String fileName;
 
     /**
-     *
      * @param bookProcessor BookProcessor
-     * @param rootPath 文件目录
-     * @param fileName 文件名
+     * @param rootPath      文件目录
+     * @param fileName      文件名
      */
     public BookWriter(BookProcessor bookProcessor, File rootPath, String fileName) {
         this.bookProcessor = bookProcessor;
@@ -30,9 +29,8 @@ public class BookWriter {
     }
 
     /**
-     *
      * @param bookProcessor
-     * @param rootPath 文件目录
+     * @param rootPath      文件目录
      */
     public BookWriter(BookProcessor bookProcessor, File rootPath) {
         this(bookProcessor, rootPath, bookProcessor.getBook().getBookName());
@@ -40,13 +38,14 @@ public class BookWriter {
 
     public void writeBook() throws Exception {
         //创建mimetype文件
-        IOUtils.writeText(new File(rootPath,"mimetype"),"application/epub+zip");
+        IOUtils.writeText(new File(rootPath, "mimetype"), "application/epub+zip");
         //创建META-INF/container.xml,OPS/mirroring.opf,OPS/mirroring.ncx
-        IOUtils.writeXML(parseContainer(),new File(rootPath+"\\META-INF\\","container.xml"));
-        IOUtils.writeXML(parseOPF(),new File(rootPath+"\\OPS\\","mirroring.opf"));
-        IOUtils.writeXML(parseNCX(),new File(rootPath+"\\OPS\\","mirroring.ncx"));
+        IOUtils.writeXML(parseContainer(), new File(rootPath + "\\META-INF\\", "container.xml"));
+        IOUtils.writeXML(parseOPF(), new File(rootPath + "\\OPS\\", "mirroring.opf"));
+        IOUtils.writeXML(parseNCX(), new File(rootPath + "\\OPS\\", "mirroring.ncx"));
         //移动图片文件
         moveImages();
+        //打包文件
         packEPUB();
 
     }
@@ -61,12 +60,12 @@ public class BookWriter {
         ContainerReference container = bookProcessor.getContainer();
         //构建基本结构
         Document document = DocumentHelper.createDocument();
-        Element root= document.addElement("container");
+        Element root = document.addElement("container");
         Element root_files = root.addElement("rootfiles");
         Element root_file = root_files.addElement("rootfile");
         //填充属性
-        root.addAttribute("version",container.getVersion());
-        root.addAttribute("xmlns",container.getXmlns());
+        root.addAttribute("version", container.getVersion());
+        root.addAttribute("xmlns", container.getXmlns());
         root_file.addAttribute("full-path", container.getFull_path());
         root_file.addAttribute("media-type", container.getMedia_type());
 
@@ -104,7 +103,7 @@ public class BookWriter {
         OPFReference opf = bookProcessor.getOpf();
         Document document = DocumentHelper.createDocument();
         //构建基本结构
-        Element root=document.addElement("package","http://www.idpf.org/2007/opf");//先添加命名空间，否则xmlns不会出现
+        Element root = document.addElement("package", "http://www.idpf.org/2007/opf");//先添加命名空间，否则xmlns不会出现
         Element metadata = root.addElement("metadata");
         Element manifest = root.addElement("manifest");
         manifest.addAttribute("toc", "ncx");
@@ -133,7 +132,7 @@ public class BookWriter {
 
         //这里单独处理封面
         File cover = bookProcessor.getBook().getCover();
-        if (cover!= null) {
+        if (cover != null) {
             //在metadata里添加封面标签
             metadata.addElement("meta")
                     .addAttribute("name", "cover")
@@ -154,7 +153,7 @@ public class BookWriter {
 
         //填充属性guide
         Guide g = opf.getGuide();
-        if (g!=null) {
+        if (g != null) {
             guide.addElement("reference").addAttribute("href", g.getHref()).addAttribute("type", g.getType()).addAttribute("title", g.getTitle());
         }
 
@@ -213,8 +212,8 @@ public class BookWriter {
         for (int i = 0; i < navPointList.size(); i++) {
             NavPoint navPoint = navPointList.get(i);
             Element navPointE = navMap.addElement("navPoint")
-                    .addAttribute("id",navPoint.getId())
-                    .addAttribute("playOrder",navPoint.getPlayOrder());
+                    .addAttribute("id", navPoint.getId())
+                    .addAttribute("playOrder", navPoint.getPlayOrder());
             navPointE.addElement("navLabel").addElement("text").addText(navPoint.getName());
             navPointE.addElement("content").addAttribute("src", navPoint.getSrc());
         }
@@ -225,12 +224,27 @@ public class BookWriter {
         List<Chapter> chapterList = bookProcessor.getBook().getChapterList();
         for (int i = 0; i < chapterList.size(); i++) {
             Chapter chapter = chapterList.get(i);
-            IOUtils.writeXML(createChapterHtml(chapter), new File(rootPath + "\\OPS\\" + "chapter" + i+".html"));
-            //如果是图片章节，把图片复制到images/
-            if (chapter.getMediaType() == MediaType.PIC_LIST) {
+
+            //如果是图片章节
+            if (chapter.getMediaType() == MediaType.CHAPTER_PIC_LIST) {
+                //新建html，写入内容
+                IOUtils.writeXML(createChapterHtml(chapter), new File(rootPath + "\\OPS\\" + "chapter" + i + ".html"));
+                //移动图片
                 List<File> picList = chapter.getPicFileList();
                 for (File file : picList) {
                     FileUtils.copyFileToDirectory(file, new File(rootPath + "\\OPS\\images\\"), true);
+                }
+            } else if (chapter.getMediaType() == MediaType.CHAPTER_TEXT) {
+                //如果是文字章节，只写入内容
+                IOUtils.writeXML(createChapterHtml(chapter), new File(rootPath + "\\OPS\\" + "chapter" + i + ".html"));
+            } else if (chapter.getMediaType() == MediaType.CHAPTER_HTML) {
+                //如果是html章节，复制html
+                ResourceHtml resourceHtml = chapter.getResourceHtml();
+                FileUtils.copyFile(resourceHtml.getHtmlFile(), new File(rootPath + "\\OPS\\", "chapter" + i + ".html"));
+                //复制图片
+                List<File> picFileList = resourceHtml.getPicFileList();
+                for (File pic : picFileList) {
+                    FileUtils.copyFileToDirectory(pic, new File(rootPath + "\\OPS\\images\\"), true);
                 }
             }
         }
@@ -244,6 +258,7 @@ public class BookWriter {
 
     /**
      * 把一个章节解析成html
+     *
      * @param chapter
      * @return
      */
@@ -254,15 +269,15 @@ public class BookWriter {
         Element body = root.addElement("body");
 
         //如果是图片章节，把图片标签写入html
-        if (chapter.getMediaType() == MediaType.PIC_LIST) {
+        if (chapter.getMediaType() == MediaType.CHAPTER_PIC_LIST) {
             List<File> picList = chapter.getPicFileList();
             for (int i = 0; i < picList.size(); i++) {
                 File pic = picList.get(i);
                 //加入style使图片适应屏幕
-                body.addElement("p").addAttribute("style","text-align:center;text-indent:0em")
+                body.addElement("p").addAttribute("style", "text-align:center;text-indent:0em")
                         .addElement("img").addAttribute("src", "images\\" + pic.getName());
             }
-        } else if (chapter.getMediaType() == MediaType.TEXT) {
+        } else if (chapter.getMediaType() == MediaType.CHAPTER_TEXT) {
             //如果是文字章节,直接把文字写入html
             body.addText(chapter.getContent());
         }
@@ -277,12 +292,12 @@ public class BookWriter {
         File meta_inf = new File(rootPath + "\\META-INF");
         File ops = new File(rootPath + "\\OPS");
         //新文件夹，等待压缩
-        File newDir = new File(rootPath + "\\" + fileName+".epub");
+        File newDir = new File(rootPath + "\\" + fileName + ".epub");
         //把三个文件夹和文件移动到新文件夹
         if (newDir.exists()) throw new Exception("文件已经存在，请先删除:" + newDir.getName());
-        FileUtils.moveFileToDirectory(mimetype,newDir,true);
-        FileUtils.moveDirectoryToDirectory(meta_inf,newDir,true);
-        FileUtils.moveDirectoryToDirectory(ops,newDir,true);
+        FileUtils.moveFileToDirectory(mimetype, newDir, true);
+        FileUtils.moveDirectoryToDirectory(meta_inf, newDir, true);
+        FileUtils.moveDirectoryToDirectory(ops, newDir, true);
         //压缩新文件夹
         ZipUtil.unexplode(newDir);
         //新文件夹变成了一个文件
