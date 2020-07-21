@@ -1,10 +1,8 @@
 # EpubComicBuilder
 
-__直接下载jar包即可__
-
 制作epub漫画
 
-`````````
+```Java
 Book book = new Book("第一本书");
 //作者
 book.setAuthor("无镜像");
@@ -36,10 +34,13 @@ BookWriter bookWriter = new BookWriter(book.build(), new File("F:\\tt\\ttt\\"));
 bookWriter.writeBook();
 `````````
 
-__注意__
-添加html章节，html文件内图片的引用要更改，
-例如
-```<img src="https://192.306.55/name.jpg" />```
-改为
-```<img src="images/name.jpg" />```
+__注意:添加html章节，html文件内图片的引用要更改__ 
+例如  
+```html
+<img src="https://192.306.55/name.jpg" />
+```  
+改为  
+```html
+<img src="images/name.jpg" />
+```
 
