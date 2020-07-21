@@ -21,6 +21,16 @@ book.addChapter(chapter);
 //添加文字章节
 Chapter chapter1 = new Chapter("第二章", "章节内容");
 book.addChapter(chapter1);
+
+//添加html章节
+List<File> picList = new ArrayList<File>();
+File[] files = new File("F:\\t").listFiles();
+Collections.addAll(picList, files);
+//html包含图片
+Chapter chapter_html = new Chapter("html章",new ResourceHtml(new File("F:\\1.html")).withImages(picList));
+book.addChapter(chapter_html);
+
+
 //生成路径
 BookWriter bookWriter = new BookWriter(book.build(), new File("F:\\tt\\ttt\\"));
 bookWriter.writeBook();
