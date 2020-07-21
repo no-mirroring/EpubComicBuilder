@@ -35,3 +35,11 @@ book.addChapter(chapter_html);
 BookWriter bookWriter = new BookWriter(book.build(), new File("F:\\tt\\ttt\\"));
 bookWriter.writeBook();
 `````````
+
+*注意
+添加html章节，html文件内图片的引用要更改，
+例如
+<img src="https://192.306.55/name.jpg" />
+改为
+<img src="images/name.jpg" />
+*
